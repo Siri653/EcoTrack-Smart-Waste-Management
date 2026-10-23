@@ -1,0 +1,133 @@
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: linear-gradient(135deg, #e7f5ec, #f5faf6, #d9eddf);
+    color: #183128;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 36px;
+    background: white;
+    border: 1px solid #e3ebe5;
+    border-radius: 20px;
+    box-shadow: 0 15px 45px rgba(24, 80, 52, 0.10);
+}
+
+.logo {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 18px;
+    display: grid;
+    place-items: center;
+    border-radius: 17px;
+    background: #187a50;
+    color: white;
+    font-size: 34px;
+}
+
+h1 {
+    margin: 0;
+    text-align: center;
+    font-size: 27px;
+    letter-spacing: -0.7px;
+}
+
+.subtitle {
+    margin: 10px 0 25px;
+    text-align: center;
+    color: #74827a;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+label {
+    display: block;
+    margin: 16px 0 7px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+input {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #dce6de;
+    border-radius: 9px;
+    background: #fcfdfc;
+    font-size: 13px;
+    outline: none;
+}
+
+input:focus {
+    border-color: #187a50;
+    box-shadow: 0 0 0 3px #e7f5ec;
+}
+
+button {
+    width: 100%;
+    margin-top: 24px;
+    padding: 14px;
+    border: none;
+    border-radius: 9px;
+    background: #187a50;
+    color: white;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #10583b;
+}
+
+.footer-text {
+    margin: 23px 0 0;
+    text-align: center;
+    color: #74827a;
+    font-size: 12px;
+}
+
+a {
+    color: #187a50;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.message {
+    padding: 11px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.message.success {
+    background: #e2f5e8;
+    color: #17683f;
+}
+
+.message.error {
+    background: #fff0ed;
+    color: #a43e2b;
+}
+
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 25px 21px;
+    }
+}

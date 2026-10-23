@@ -1,0 +1,88 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | EcoTrack</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
+</head>
+<body>
+    <div class="auth-card">
+        <div class="logo">♻</div>
+        <h1>Welcome Back!</h1>
+        <p class="subtitle">Login to your EcoTrack account</p>
+
+        <div id="message" class="message" hidden></div>
+
+        <form id="loginForm">
+            <label for="email">Email address</label>
+            <input id="email" type="email" required placeholder="Enter your email">
+
+            <label for="password">Password</label>
+            <input id="password" type="password" required placeholder="Enter your password">
+
+            <button id="loginButton" type="submit">Login to EcoTrack →</button>
+        </form>
+
+        <p class="footer-text">
+            Don't have an account?
+            <a href="{{ url_for('register') }}">Create account</a>
+        </p>
+    </div>
+
+    <script type="module">
+        import { auth } from "{{ url_for('static', filename='firebase.js') }}";
+        import {
+            signInWithEmailAndPassword
+        } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+
+        const form = document.getElementById("loginForm");
+        const message = document.getElementById("message");
+        const button = document.getElementById("loginButton");
+
+        function showMessage(text, isError = true) {
+            message.hidden = false;
+            message.textContent = text;
+            message.className = "message " + (isError ? "error" : "success");
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            button.disabled = true;
+            button.textContent = "Signing in...";
+
+            try {
+                const credential = await signInWithEmailAndPassword(
+                    auth,
+                    document.getElementById("email").value.trim(),
+                    document.getElementById("password").value
+                );
+
+                const idToken = await credential.user.getIdToken();
+
+                const response = await fetch("{{ url_for('create_session') }}", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Bearer " + idToken
+                    }
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || "Could not create application session.");
+                }
+
+                showMessage("Login successful! Opening dashboard...", false);
+                window.location.href = "{{ url_for('index') }}";
+
+            } catch (error) {
+                console.error("Login error:", error);
+                showMessage(error.message || "Login failed.");
+                button.disabled = false;
+                button.textContent = "Login to EcoTrack →";
+            }
+        });
+    </script>
+</body>
+</html>

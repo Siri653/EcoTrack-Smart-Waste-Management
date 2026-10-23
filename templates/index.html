@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EcoTrack | Smart Waste Management</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header><div class="brand"><span>♻</span><div><b>EcoTrack</b><small>Smart Waste Management</small></div></div><a href="#reports">Track reports ↓</a></header>
+<main>
+  <section class="hero"><p class="eyebrow">CLEANER STREETS START HERE</p><h1>Make your neighborhood<br><em>cleaner, together.</em></h1>
+    <p>Report waste hotspots and help your community track collection progress.</p><a class="button" href="#report-form">＋ Report a waste issue</a><div class="eco-art">♻</div></section>
+  {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
+  <section class="stats">
+    <div><small>Total reports</small><strong>{{ counts.total }}</strong></div><div><small>Pending</small><strong>{{ counts.pending }}</strong></div>
+    <div><small>In progress</small><strong>{{ counts.progress }}</strong></div><div><small>Completed</small><strong>{{ counts.completed }}</strong></div>
+  </section>
+  <div class="columns">
+    <section class="panel" id="report-form"><p class="eyebrow">TAKE ACTION</p><h2>Report waste</h2><p class="muted">Tell us where waste needs attention.</p>
+      <form method="post" action="{{ url_for('create_report') }}">
+        <label>Your name</label><input name="reporter" placeholder="Enter your name" maxlength="80" required>
+        <label>Location / area</label><input name="location" placeholder="Street, area or landmark" maxlength="160" required>
+        <label>Waste type</label><select name="waste_type" required><option value="">Choose waste type</option>{% for kind in ["Household", "Plastic", "Construction", "Electronic", "Garden", "Other"] %}<option>{{ kind }}</option>{% endfor %}</select>
+        <label>Description</label><textarea name="description" rows="4" placeholder="Describe the issue..." maxlength="1000" required></textarea>
+        <button class="button" type="submit">Submit report →</button>
+      </form>
+    </section>
+    <section class="panel" id="reports"><p class="eyebrow">COMMUNITY UPDATES</p><h2>Waste reports <span class="pill">{{ counts.total }} total</span></h2><p class="muted">Update the collection status (admin demo).</p>
+      {% if reports %}{% for report in reports %}<article class="report">
+        <div class="report-head"><small>REPORT #{{ report.id }}</small><span class="status {{ report.status|lower|replace(' ', '-') }}">{{ report.status }}</span></div>
+        <h3>{{ report.location }}</h3><p>{{ report.description }}</p><div class="meta">{{ report.wasteType }} · By {{ report.reporter }} · {{ report.created_at }}</div>
+        <form class="status-form" method="post" action="{{ url_for('update_status', report_id=report.id) }}"><label>Update status</label><select name="status">{% for status in ["Pending", "In Progress", "Completed"] %}<option {% if report.status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select><button class="small-button">Save</button></form>
+      </article>{% endfor %}{% else %}<div class="empty"><span>🌱</span><h3>No reports yet</h3><p>Submit the first report to get started.</p></div>{% endif %}
+    </section>
+  </div>
+  <footer>EcoTrack · DevOps case study · Flask, SQLite, GitHub, Jenkins & Docker</footer>
+</main>
+</body></html>

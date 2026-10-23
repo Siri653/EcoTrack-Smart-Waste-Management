@@ -1,0 +1,115 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | EcoTrack</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='auth.css') }}">
+</head>
+<body>
+    <div class="auth-card">
+        <div class="logo">♻</div>
+        <h1>Create Account</h1>
+        <p class="subtitle">Join us to build a cleaner community</p>
+
+        <div id="message" class="message" hidden></div>
+
+        <form id="registerForm">
+            <label for="name">Full name</label>
+            <input id="name" type="text" maxlength="80"
+                   placeholder="Enter your full name" required>
+
+            <label for="email">Email address</label>
+            <input id="email" type="email"
+                   placeholder="Enter your email" required>
+
+            <label for="password">Password</label>
+            <input id="password" type="password" minlength="8"
+                   placeholder="At least 8 characters" required>
+
+            <label for="confirmPassword">Confirm password</label>
+            <input id="confirmPassword" type="password" minlength="8"
+                   placeholder="Re-enter your password" required>
+
+            <button id="registerButton" type="submit">Create Account →</button>
+        </form>
+
+        <p class="footer-text">
+            Already have an account?
+            <a href="{{ url_for('login') }}">Login here</a>
+        </p>
+    </div>
+
+    <script type="module">
+        import { auth, database } from "{{ url_for('static', filename='firebase.js') }}";
+        import {
+            createUserWithEmailAndPassword,
+            updateProfile
+        } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+        import {
+            ref, set
+        } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+        const form = document.getElementById("registerForm");
+        const message = document.getElementById("message");
+        const button = document.getElementById("registerButton");
+
+        function showMessage(text, isError = true) {
+            message.hidden = false;
+            message.textContent = text;
+            message.className = "message " + (isError ? "error" : "success");
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+            const confirmPassword = document.getElementById("confirmPassword").value;
+
+            if (!name) {
+                showMessage("Please enter your name.");
+                return;
+            }
+
+            if (password !== confirmPassword) {
+                showMessage("Passwords do not match.");
+                return;
+            }
+
+            button.disabled = true;
+            button.textContent = "Creating account...";
+
+            try {
+                const result = await createUserWithEmailAndPassword(
+                    auth, email, password
+                );
+
+                await updateProfile(result.user, { displayName: name });
+
+                await set(ref(database, "users/" + result.user.uid), {
+                    name: name,
+                    email: email,
+                    createdAt: new Date().toISOString()
+                });
+
+                showMessage("Registration successful! You can now log in.", false);
+                form.reset();
+
+                setTimeout(() => {
+                    window.location.href = "{{ url_for('login') }}";
+                }, 1200);
+
+            } catch (error) {
+                console.error("Registration error:", error);
+                showMessage(error.message || "Registration failed.");
+            } finally {
+                button.disabled = false;
+                button.textContent = "Create Account →";
+            }
+        });
+    </script>
+</body>
+</html>

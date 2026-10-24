@@ -10,7 +10,6 @@ env/
 .env.*
 !.env.example
 firebase-secrets/
-firebase_config.py
 *serviceAccount*.json
 *service-account*.json
 firebase-adminsdk-*.json

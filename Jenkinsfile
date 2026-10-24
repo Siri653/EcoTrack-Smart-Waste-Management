@@ -69,7 +69,7 @@ stage('Deploy locally') {
 
                 set "FIREBASE_KEY_FILE_DOCKER=%FIREBASE_KEY_FILE:\\=/%"
 
-                docker run -d --name %CONTAINER_NAME% --restart unless-stopped -p %HOST_PORT%:5000 -e "SECRET_KEY=%SECRET_KEY%" -e "GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/firebase-service-account.json" --mount "type=bind,source=%FIREBASE_KEY_FILE_DOCKER%,target=/run/secrets/firebase-service-account.json,readonly" %IMAGE_NAME%:%BUILD_NUMBER%
+                docker run -d --name %CONTAINER_NAME% --restart unless-stopped -p %HOST_PORT%:5000 -e "SECRET_KEY=%SECRET_KEY%" -e "GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/firebase-service-account.json" -v "%FIREBASE_KEY_FILE%:/run/secrets/firebase-service-account.json:ro" %IMAGE_NAME%:%BUILD_NUMBER%
 
                 if errorlevel 1 exit /b 1
             '''

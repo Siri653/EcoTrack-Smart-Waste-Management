@@ -1,48 +1,100 @@
+
 pipeline {
     agent any
-    environment {
-        IMAGE_NAME = 'smart-waste-management'
-        CONTAINER_NAME = 'smart-waste-management-app'
+
+    options {
+        skipDefaultCheckout(true)
     }
+
+    environment {
+        IMAGE_NAME = 'ecotrack'
+        CONTAINER_NAME = 'ecotrack-ci-cd-app'
+        HOST_PORT = '5002'
+    }
+
     stages {
         stage('Checkout') {
-            steps { checkout scm }
+            steps {
+                checkout scm
+            }
         }
+
         stage('Install dependencies and test') {
             steps {
-                sh '''
-                    python3 -m venv .venv
-                    . .venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt pytest
-                    pytest -q
-                '''
+                withEnv(['SECRET_KEY=ecotrack-ci-test-only']) {
+                    bat '''
+                        if not exist ".venv\\Scripts\\python.exe" (
+                            python -m venv .venv
+                            if errorlevel 1 exit /b 1
+                        )
+
+                        ".venv\\Scripts\\python.exe" -m pip install --upgrade pip
+                        if errorlevel 1 exit /b 1
+
+                        ".venv\\Scripts\\python.exe" -m pip install -r requirements.txt pytest
+                        if errorlevel 1 exit /b 1
+
+                        ".venv\\Scripts\\python.exe" -m pytest -q
+                    '''
+                }
             }
         }
+
         stage('Build Docker image') {
-            steps { sh 'docker build -t ${IMAGE_NAME}:${BUILD_NUMBER} .' }
+            steps {
+                bat 'docker build -t %IMAGE_NAME%:%BUILD_NUMBER% .'
+            }
         }
+
         stage('Deploy locally') {
             steps {
-                sh '''
-                    docker rm -f ${CONTAINER_NAME} || true
-                    docker volume create waste-data || true
-                    docker run -d --name ${CONTAINER_NAME} --restart unless-stopped -p 5000:5000 -v waste-data:/data ${IMAGE_NAME}:${BUILD_NUMBER}
-                '''
+                withCredentials([
+                    file(
+                        credentialsId: 'firebase-service-account',
+                        variable: 'FIREBASE_KEY_FILE'
+                    ),
+                    string(
+                        credentialsId: 'ecotrack-secret-key',
+                        variable: 'SECRET_KEY'
+                    )
+                ]) {
+                    bat '''
+                        docker rm -f %CONTAINER_NAME% >NUL 2>&1
+
+                        docker run -d ^
+                          --name %CONTAINER_NAME% ^
+                          --restart unless-stopped ^
+                          -p %HOST_PORT%:5000 ^
+                          -e "SECRET_KEY=%SECRET_KEY%" ^
+                          -e "GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/firebase-service-account.json" ^
+                          --mount "type=bind,source=%FIREBASE_KEY_FILE%,target=/run/secrets/firebase-service-account.json,readonly" ^
+                          %IMAGE_NAME%:%BUILD_NUMBER%
+
+                        if errorlevel 1 exit /b 1
+                    '''
+                }
             }
         }
+
         stage('Smoke test') {
             steps {
-                sh '''
-                    for i in $(seq 1 15); do
-                      if curl --fail http://localhost:5000/health; then exit 0; fi
-                      sleep 2
-                    done
-                    echo "Application health check failed"
-                    exit 1
+                bat '''
+                    for /L %%i in (1,1,15) do (
+                        curl.exe --fail --silent http://localhost:%HOST_PORT%/health
+                        if not errorlevel 1 exit /b 0
+                        timeout /t 2 /nobreak >NUL
+                    )
+
+                    echo Application health check failed
+                    exit /b 1
                 '''
             }
         }
     }
-    post { always { echo 'Pipeline finished. Review stage logs for details.' } }
+
+    post {
+        always {
+            echo 'Pipeline finished. Review stage logs for details.'
+        }
+    }
 }

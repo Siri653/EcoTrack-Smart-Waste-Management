@@ -47,6 +47,7 @@ pipeline {
         }
 
     
+
 stage('Deploy locally') {
     steps {
         withCredentials([
@@ -62,21 +63,22 @@ stage('Deploy locally') {
             bat '''
                 docker rm -f %CONTAINER_NAME% >NUL 2>&1
 
-                docker run -d --name %CONTAINER_NAME% --restart unless-stopped -p %HOST_PORT%:5000 -e "SECRET_KEY=%SECRET_KEY%" --entrypoint /bin/sh %IMAGE_NAME%:%BUILD_NUMBER% -c "while :; do sleep 3600; done"
+                docker create --name %CONTAINER_NAME% --restart unless-stopped -p %HOST_PORT%:5000 -e "SECRET_KEY=%SECRET_KEY%" -e "GOOGLE_APPLICATION_CREDENTIALS=/app/firebase-service-account.json" %IMAGE_NAME%:%BUILD_NUMBER%
+
                 if errorlevel 1 exit /b 1
 
-                docker exec %CONTAINER_NAME% mkdir -p /run/secrets
+                docker cp "%FIREBASE_KEY_FILE%" %CONTAINER_NAME%:/app/firebase-service-account.json
+
                 if errorlevel 1 exit /b 1
 
-                docker cp "%FIREBASE_KEY_FILE%" %CONTAINER_NAME%:/run/secrets/firebase-service-account.json
-                if errorlevel 1 exit /b 1
+                docker start %CONTAINER_NAME%
 
-                docker exec -d -e GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/firebase-service-account.json %CONTAINER_NAME% gunicorn --bind 0.0.0.0:5000 app:app
                 if errorlevel 1 exit /b 1
             '''
         }
     }
 }
+
     
 
 

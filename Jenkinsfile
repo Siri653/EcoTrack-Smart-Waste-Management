@@ -46,35 +46,37 @@ pipeline {
             }
         }
 
-        stage('Deploy locally') {
-            steps {
-                withCredentials([
-                    file(
-                        credentialsId: 'firebase-service-account',
-                        variable: 'FIREBASE_KEY_FILE'
-                    ),
-                    string(
-                        credentialsId: 'ecotrack-secret-key',
-                        variable: 'SECRET_KEY'
-                    )
-                ]) {
-                    bat '''
-                        docker rm -f %CONTAINER_NAME% >NUL 2>&1
+        
+stage('Deploy locally') {
+    steps {
+        withCredentials([
+            file(
+                credentialsId: 'firebase-service-account',
+                variable: 'FIREBASE_KEY_FILE'
+            ),
+            string(
+                credentialsId: 'ecotrack-secret-key',
+                variable: 'SECRET_KEY'
+            )
+        ]) {
+            bat '''
+                docker rm -f %CONTAINER_NAME% >NUL 2>&1
 
-                        docker run -d ^
-                          --name %CONTAINER_NAME% ^
-                          --restart unless-stopped ^
-                          -p %HOST_PORT%:5000 ^
-                          -e "SECRET_KEY=%SECRET_KEY%" ^
-                          -e "GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/firebase-service-account.json" ^
-                          --mount "type=bind,source=%FIREBASE_KEY_FILE%,target=/run/secrets/firebase-service-account.json,readonly" ^
-                          %IMAGE_NAME%:%BUILD_NUMBER%
+                if not exist "%FIREBASE_KEY_FILE%" (
+                    echo Firebase credential file not found.
+                    exit /b 1
+                )
 
-                        if errorlevel 1 exit /b 1
-                    '''
-                }
-            }
+                set "FIREBASE_KEY_FILE_DOCKER=%FIREBASE_KEY_FILE:\\=/%"
+
+                docker run -d --name %CONTAINER_NAME% --restart unless-stopped -p %HOST_PORT%:5000 -e "SECRET_KEY=%SECRET_KEY%" -e "GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/firebase-service-account.json" --mount "type=bind,source=%FIREBASE_KEY_FILE_DOCKER%,target=/run/secrets/firebase-service-account.json,readonly" %IMAGE_NAME%:%BUILD_NUMBER%
+
+                if errorlevel 1 exit /b 1
+            '''
         }
+    }
+}
+
 
         stage('Smoke test') {
             steps {
